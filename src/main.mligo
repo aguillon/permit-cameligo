@@ -107,7 +107,7 @@ let transfer_permitted (transfer:FA2.transfer) (s: storage) =
     let make_transfer (acc, transfer_from : (FA2.Ledger.t * extension) * FA2.transfer_from) =
         let (ledger, ext) = acc in
         let transfer_from_hash = Crypto.blake2b (Bytes.pack transfer_from) in
-        let permit_key : Extension.permit_key = (transfer_from.from_, transfer_from_hash) in 
+        let permit_key : Extension.permit_key = (transfer_from.from_, transfer_from_hash) in
         let (is_transfer_authorized, ext) = Extension.transfer_presigned ext permit_key in
         let {from_; txs} = transfer_from in
         let ledger = List.fold
@@ -126,10 +126,10 @@ let transfer_permitted (transfer:FA2.transfer) (s: storage) =
     let (new_ledger, new_ext) = List.fold make_transfer transfer (s.ledger, s.extension)
     in Constants.no_operation, { s with ledger = new_ledger; extension = new_ext }
 
-let set_admin (addr: address) (s: storage) = 
+let set_admin (addr: address) (s: storage) =
     Constants.no_operation, { s with extension = Extension.set_admin s.extension addr }
 
-type parameter = 
+type parameter =
     | Transfer of FA2.transfer
     | Balance_of of FA2.balance_of
     | Update_operators of FA2.update_operators
