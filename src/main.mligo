@@ -1,4 +1,4 @@
-#import "ligo-extendable-fa2/lib/multi_asset/fa2.mligo" "FA2"
+#import "../ligo-extendable-fa2/lib/multi_asset/fa2.mligo" "FA2"
 #import "./constants.mligo" "Constants"
 #import "./storage.mligo" "Storage"
 #import "./extension.mligo" "Extension"

@@ -1,0 +1,3 @@
+[submodule "ligoExtendableFA2"]
+	path = ligo-extendable-fa2
+	url = https://github.com/smart-chain-fr/ligoExtendableFA2
