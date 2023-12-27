@@ -1,8 +1,8 @@
 {
   "name": "@ligo/permit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "dependencies": {
-    "ligo-extendable-fa2": "1.0.4"
+    "@ligo/fa": "1.1.1"
   },
   "repository": {
     "type": "git",
