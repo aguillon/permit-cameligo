@@ -21,8 +21,8 @@ let test_success_add_permit_one =
     let (owner1_addr, _, _) = owner1 in
     let (owner2_addr, _, _) = owner2 in
     let transfer_requests = ([
-        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.atomic_trans list)});
-    ] : Token.FA2.transfer) in
+        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
+    ] : Token.FA2.TZIP12.transfer) in
     let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
     let permit = Token_helper.make_permit(hash_, owner1, tok.addr, 0n) in
     let () = Token_helper.permit_success([permit], tok.contr) in
@@ -36,13 +36,13 @@ let test_success_add_permit_list =
     let (owner1_addr, _, _) = owner1 in
     let (owner2_addr, _, _) = owner2 in
     let transfer_requests = ([
-        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.atomic_trans list)});
-    ] : Token.FA2.transfer) in
+        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
+    ] : Token.FA2.TZIP12.transfer) in
     let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
     let permit1 = Token_helper.make_permit(hash_, owner1, tok.addr, 0n) in
     let transfer_requests = ([
-        ({from_=owner2_addr; txs=([{to_=owner1_addr;amount=2n;token_id=1n}] : Token.FA2.atomic_trans list)});
-    ] : Token.FA2.transfer) in
+        ({from_=owner2_addr; txs=([{to_=owner1_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
+    ] : Token.FA2.TZIP12.transfer) in
     let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
     let permit2 = Token_helper.make_permit(hash_, owner2, tok.addr, 1n) in
     let () = Token_helper.permit_success([permit1; permit2], tok.contr) in
@@ -62,8 +62,8 @@ let test_success_update_permit =
     let (owner2_addr, _, _) = owner2 in
 
     let transfer_requests = ([
-        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.atomic_trans list)});
-    ] : Token.FA2.transfer) in
+        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
+    ] : Token.FA2.TZIP12.transfer) in
     let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
 
     let extended_storage = Token_helper.get_initial_extended_storage(admin, init_default_expiry, init_max_expiry) in
@@ -84,8 +84,8 @@ let test_success_update_permit =
     let (owner1_addr, _, _) = owner1 in
     let (owner2_addr, _, _) = owner2 in
     let transfer_requests = ([
-        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.atomic_trans list)});
-    ] : Token.FA2.transfer) in
+        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
+    ] : Token.FA2.TZIP12.transfer) in
     let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
     let permit = Token_helper.make_permit(hash_, owner1, tok.addr, 0n) in
     let () = Token_helper.permit_success([permit], tok.contr) in

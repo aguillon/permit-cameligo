@@ -2,13 +2,13 @@
 #import "./assert.mligo" "Assert"
 
 (* Some types for readability *)
-type taddr = (Token.parameter, Token.storage) typed_address
-type contr = Token.parameter contract
+type taddr = (Token parameter_of, Token.storage) typed_address
+type contr = Token parameter_of contract
 type originated = {
     addr: address;
     taddr: taddr;
-    owners: address list;
     contr: contr;
+    owners: address list;
 }
 
 (* Some dummy values when they don't matter for a given test *)
@@ -29,10 +29,10 @@ let get_initial_extended_storage (admin, default_expiry, max_expiry: address * n
 
 (* Originate a Token contract with given init_storage storage *)
 let originate (init_storage: Token.storage) =
-    let (taddr, _, _) = Test.originate Token.main init_storage 0tez in
-    let contr = Test.to_contract taddr in
-    let addr = Tezos.address contr in
-    { addr = addr; taddr = taddr; contr = contr }
+    let orig = Test.originate (contract_of Token) init_storage 0tez in
+    let contract = Test.to_contract orig.addr in
+    let address = Tezos.address contract in
+    { addr = address; taddr = orig.addr; contr = contract }
 
 (*
     Make a permit with given packed params and secret key
@@ -45,23 +45,23 @@ let make_permit (hash_, account, token_addr, counter : bytes * (address * key * 
     (pub_key, (sig_, hash_))
 
 (* Call entry point of Token contr contract *)
-let call (p, contr : Token.parameter * contr) =
+let call (p, contr : Token parameter_of * contr) =
     Test.transfer_to_contract contr p 0mutez
 
 let permit (p, contr : Token.permit_params list * contr) =
     call(Permit(p), contr)
 
 let set_expiry (p, contr : Token.expiry_params * contr) =
-    call(SetExpiry(p), contr)
+    call(Set_expiry(p), contr)
 
 let set_admin (p, contr : address * contr) =
     call(Set_admin(p), contr)
 
-let transfer (p, contr : Token.FA2.transfer * contr) =
-    let p : Token.parameter = Transfer(p) in
+let transfer (p, contr : Token.FA2.TZIP12.transfer * contr) =
+    let p : Token parameter_of = Transfer(p) in
     call(p, contr)
 
-let create_token (md, owner, amount, contr : Token.FA2.TokenMetadata.data * address * nat * contr) =
+let create_token (md, owner, amount, contr : Token.FA2.TZIP12.tokenMetadataData * address * nat * contr) =
     call(Create_token(md, owner, amount), contr)
 
 let mint_token (p, contr : Token.mint_or_burn list * contr) =
@@ -79,10 +79,10 @@ let set_expiry_success (p, contr : Token.expiry_params * contr) =
 let set_admin_success (p, contr : address * contr) =
     Assert.tx_success (set_admin(p, contr))
 
-let transfer_success (p, contr : Token.FA2.transfer * contr) =
+let transfer_success (p, contr : Token.FA2.TZIP12.transfer * contr) =
     Assert.tx_success (transfer(p, contr))
 
-let create_token_success (md, owner, amount, contr : Token.FA2.TokenMetadata.data * address * nat * contr) =
+let create_token_success (md, owner, amount, contr : Token.FA2.TZIP12.tokenMetadataData * address * nat * contr) =
     Assert.tx_success (create_token(md, owner, amount, contr))
 
 let mint_token_success (p, contr : Token.mint_or_burn list * contr) =
@@ -135,7 +135,7 @@ let assert_balance (taddr, owner, token_id, amount_ : taddr * address * nat * na
         | None -> Test.failwith("Big_map key should not be missing")
 
 (* assert Token contract at [taddr] have token_total_supply for [token_id] matching [amount_] *)
-let assert_supply (taddr, token_id, amount_ : taddr * Token.FA2.Ledger.token_id * nat) =
+let assert_supply (taddr, token_id, amount_ : taddr * nat * nat) =
     let s = Test.get_storage taddr in
     match Big_map.find_opt token_id s.extension.extension with
         Some tokens -> assert(tokens = amount_)

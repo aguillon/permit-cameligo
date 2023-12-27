@@ -2,7 +2,7 @@
 
 let dummy_token_info = (Map.empty : (string, bytes) map)
 
-let get_dummy_token_data (token_id : nat) : Token.FA2.TokenMetadata.data =
+let get_dummy_token_data (token_id : nat) : Token.FA2.TZIP12.tokenMetadataData =
    {token_id=token_id;token_info=dummy_token_info}
 
 (*
@@ -32,7 +32,7 @@ let (owner1, owner2, owner3) = owners in
         (1n, get_dummy_token_data(1n));
         (2n, get_dummy_token_data(2n));
         (3n, get_dummy_token_data(3n));
-    ] : Token.FA2.TokenMetadata.t) in
+    ] : Token.FA2.TZIP12.tokenMetadata) in
 
     {
         ledger         = ledger;
