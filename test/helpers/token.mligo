@@ -1,5 +1,6 @@
 #import "../../src/main.mligo" "Token"
 #import "./assert.mligo" "Assert"
+#import "../../breathalyzer/lib/lib.mligo" "B"
 
 (* Some types for readability *)
 type taddr = (Token parameter_of, Token.storage) typed_address
@@ -38,11 +39,10 @@ let originate (init_storage: Token.storage) =
     Make a permit with given packed params and secret key
     The chain_id is equal to 0x00000000 in the test framework
 *)
-let make_permit (hash_, account, token_addr, counter : bytes * (address * key * string) * address * nat) : Token.permit_params =
-    let (_, pub_key, secret_key) = account in
-    let packed = Bytes.pack ((0x00000000, token_addr), (counter, hash_)) in
-    let sig_ = Test.sign secret_key packed in
-    (pub_key, (sig_, hash_))
+let make_permit (hash_, account, contract_address, counter : bytes * B.Context.actor * address * nat) : Token.permit_params =
+    let packed = Bytes.pack ((0x00000000, contract_address), (counter, hash_)) in
+    let sig_ = Test.sign account.secret packed in
+    (account.key, (sig_, hash_))
 
 (* Call entry point of Token contr contract *)
 let call (p, contr : Token parameter_of * contr) =
