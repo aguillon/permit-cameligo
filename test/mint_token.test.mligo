@@ -1,46 +1,86 @@
-#import "./helpers/token.mligo" "Token_helper"
-#import "./helpers/fa2.mligo" "FA2_helper"
-#import "./helpers/log.mligo" "Log"
-#import "./helpers/assert.mligo" "Assert"
-#import "./bootstrap/bootstrap.mligo" "Bootstrap"
-#import "../src/main.mligo" "Token"
+#import "../src/main.mligo" "Main"
+#import "../breathalyzer/lib/lib.mligo" "B"
+#import "./helpers/common.mligo" "C"
 
-let () = Log.describe("[Mint_token] test suite")
+let suite = B.Model.suite "Suite for mint_token" [
+  B.Model.case
+    "mint_token"
+    "succeeds when the admin is calling it"
+    (fun level ->
+      let (_, (admin, bob, _)) = B.Context.init_default () in
+      let contract = C.originate level admin.address in
+      B.Result.reduce [
+        B.Context.call_as admin contract (Mint_token [{
+          owner = bob.address;
+          token_id = 1n;
+          amount_ = 10n
+        }]);
 
-(* Boostrapping of the test environment, *)
-let init_tok_amount = 10n
+        let storage = B.Contract.storage_of contract in
+        B.Assert.is_equal "Supply for the minted token"
+          (Big_map.find 1n storage.extension.extension)
+          10n;
 
-let bootstrap () =
-    let (admin, owners, owners_with_keys, ops) = Bootstrap.boot_state(Bootstrap.dummy_genesis_ts) in
-    let base_extended_storage = Token_helper.get_initial_extended_storage(
-      admin, Token_helper.dummy_default_expiry, Token_helper.dummy_max_expiry) in
-    let tok = Bootstrap.boot_token(owners, ops, init_tok_amount, base_extended_storage) in
-    (tok, admin, owners_with_keys)
+        let storage = B.Contract.storage_of contract in
+        B.Assert.is_equal "Balance for bob"
+          (Big_map.find (bob.address, 1n) storage.ledger)
+          10n
+     ]);
 
-(* Successful token mint *)
-let test_success =
-    let (tok, admin, owners) = bootstrap() in
-    let ((owner1_addr, _, _), _, _) = owners in
-    let () = Test.set_source admin in
-    let token_id = 1n in
-    let amount_ = 56n in
-    let () = Token_helper.mint_token_success([{
-       owner=owner1_addr;
-       token_id=token_id;
-       amount_=amount_;
-    }], tok.contr) in
-    let new_amount =  init_tok_amount + amount_ in
-    let () = Token_helper.assert_balance(tok.taddr, owner1_addr, token_id, new_amount) in
-    Token_helper.assert_supply(tok.taddr, token_id, new_amount)
+  B.Model.case
+    "mint_token"
+    "fails when someone else than the admin is calling it"
+    (fun level ->
+     let (_, (admin, bob, _)) = B.Context.init_default () in
+     let contract = C.originate level admin.address in
+     B.Result.reduce [
+       B.Expect.fail_with_message Main.Errors.requires_admin
+         (B.Context.call_as bob contract (Mint_token [{
+           owner = bob.address;
+           token_id = 1n;
+           amount_ = 1n
+           }]));
+     ]);
 
-(* Failure because sender is not current admin *)
-let test_failure_not_admin =
-    let (tok, _, owners) = bootstrap() in
-    let ((owner1_addr, _, _), _, _) = owners in
-    let () = Test.set_source owner1_addr in
-    let r = Token_helper.mint_token([{
-       owner=owner1_addr;
-       token_id=1n;
-       amount_=1n;
-    }], tok.contr) in
-    Assert.string_failure r Token.Errors.requires_admin
+  B.Model.case
+    "mint_token"
+    "fails when the token is not in token_metadata"
+    (fun level ->
+     let (_, (admin, bob, _)) = B.Context.init_default () in
+     let storage = C.normal_storage admin.address in
+     let storage =
+       { storage with token_metadata = Big_map.remove 1n storage.token_metadata }
+     in
+     let contract = C.originate_with_storage storage level in
+     B.Result.reduce [
+       B.Expect.fail_with_message Main.FA2.Errors.undefined_token
+         (B.Context.call_as admin contract (Mint_token [{
+           owner = bob.address;
+           token_id = 1n;
+           amount_ = 1n
+           }]));
+     ]);
+
+  B.Model.case
+    "mint_token"
+    "fails when the token is not in token_total_supply"
+    (fun level ->
+     let (_, (admin, bob, _)) = B.Context.init_default () in
+     let storage = C.normal_storage admin.address in
+     let storage =
+       { storage with extension =
+         { storage.extension with extension = Big_map.remove 1n storage.extension.extension }
+       }
+     in
+     let contract = C.originate_with_storage storage level in
+     B.Result.reduce [
+       B.Expect.fail_with_message Main.FA2.Errors.undefined_token
+         (B.Context.call_as admin contract (Mint_token [{
+           owner = bob.address;
+           token_id = 1n;
+           amount_ = 1n
+           }]));
+     ]);
+
+]
+

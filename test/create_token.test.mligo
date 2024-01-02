@@ -1,51 +1,52 @@
-#import "./helpers/token.mligo" "Token_helper"
-#import "./helpers/fa2.mligo" "FA2_helper"
-#import "./helpers/log.mligo" "Log"
-#import "./helpers/assert.mligo" "Assert"
-#import "./bootstrap/bootstrap.mligo" "Bootstrap"
-#import "../src/main.mligo" "Token"
+#import "../src/main.mligo" "Main"
+#import "../breathalyzer/lib/lib.mligo" "B"
+#import "./helpers/common.mligo" "C"
 
-let () = Log.describe("[Create_token] test suite")
+let suite = B.Model.suite "Suite for create_token" [
+  B.Model.case
+    "create_token"
+    "succeeds when the admin calls it with a fresh token_id"
+    (fun level ->
+      let (_, (admin, bob, _)) = B.Context.init_default () in
+      let contract = C.originate level admin.address in
+      let new_token_id = 4n in
+      let token_metadata = C.dummy_token_data new_token_id in
+      B.Result.reduce [
+        B.Context.call_as admin contract
+          (Create_token (token_metadata, bob.address, 10n));
 
-(* Boostrapping of the test environment, *)
-let init_tok_amount = 10n
+        let storage = B.Contract.storage_of contract in
+        B.Assert.is_equal "Balance for new token"
+          (Big_map.find (bob.address, new_token_id) storage.ledger)
+          10n;
+      ]);
 
-let bootstrap () =
-    let (admin, owners, owners_with_keys, ops) = Bootstrap.boot_state(Bootstrap.dummy_genesis_ts) in
-    let base_extended_storage = Token_helper.get_initial_extended_storage(
-      admin, Token_helper.dummy_default_expiry, Token_helper.dummy_max_expiry) in
-    let tok = Bootstrap.boot_token(owners, ops, init_tok_amount, base_extended_storage) in
-    (tok, admin, owners_with_keys)
+  B.Model.case
+    "create_token"
+    "fails when a non-admin user calls it"
+    (fun level ->
+      let (_, (admin, bob, _)) = B.Context.init_default () in
+      let contract = C.originate level admin.address in
+      let new_token_id = 4n in
+      let token_metadata = C.dummy_token_data new_token_id in
+      B.Result.reduce [
+        B.Expect.fail_with_value
+          Main.Errors.requires_admin
+          (B.Context.call_as bob contract
+            (Create_token (token_metadata, bob.address, 10n)));
+      ]);
 
-(* Successful token creation *)
-let test_success =
-    let (tok, admin, owners) = bootstrap() in
-    let ((owner1_addr, _, _), _, _) = owners in
-    let () = Test.set_source admin in
-    let token_id = 42n in
-    let amount_ = 12n in
-    let () = Token_helper.create_token_success
-      (FA2_helper.get_dummy_token_data (token_id),
-       owner1_addr, amount_, tok.contr) in
-    let () = Token_helper.assert_balance(tok.taddr, owner1_addr, token_id, amount_) in
-    Token_helper.assert_supply(tok.taddr, token_id, amount_)
-
-(* Failure because token id already present *)
-let test_failure_token_exist =
-    let (tok, admin, owners) = bootstrap() in
-    let ((owner1_addr, _, _), _, _) = owners in
-    let () = Test.set_source admin in
-    let r = Token_helper.create_token
-      (FA2_helper.get_dummy_token_data (1n),
-       owner1_addr, 12n, tok.contr) in
-    Assert.string_failure r Token.Errors.token_exist
-
-(* Failure because sender is not current admin *)
-let test_failure_not_admin =
-    let (tok, _, owners) = bootstrap() in
-    let ((owner1_addr, _, _), _, _) = owners in
-    let () = Test.set_source owner1_addr in
-    let r = Token_helper.create_token
-      (FA2_helper.get_dummy_token_data (42n),
-       owner1_addr, 12n, tok.contr) in
-    Assert.string_failure r Token.Errors.requires_admin
+  B.Model.case
+    "create_token"
+    "fails when the token already exists"
+    (fun level ->
+      let (_, (admin, bob, _)) = B.Context.init_default () in
+      let contract = C.originate level admin.address in
+      let token_metadata = C.dummy_token_data 1n in
+      B.Result.reduce [
+        B.Expect.fail_with_value
+          Main.Errors.token_exist
+          (B.Context.call_as admin contract
+            (Create_token (token_metadata, bob.address, 10n)));
+      ]);
+]

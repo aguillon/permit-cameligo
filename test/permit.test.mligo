@@ -1,94 +1,149 @@
-#import "./helpers/token.mligo" "Token_helper"
-#import "./helpers/log.mligo" "Log"
-#import "./helpers/assert.mligo" "Assert"
-#import "./bootstrap/bootstrap.mligo" "Bootstrap"
-#import "../src/main.mligo" "Token"
+#import "../src/main.mligo" "Main"
+#import "../breathalyzer/lib/lib.mligo" "B"
+#import "./helpers/common.mligo" "C"
 
-let () = Log.describe("[Permit] test suite")
+let suite = B.Model.suite "Suite for permit" [
+  B.Model.case
+    "permit"
+    "permit creation succeeds"
+    (fun level ->
+      let (_, (admin, bob, carol)) = B.Context.init_default () in
+      let contract = C.originate_with_storage (C.storage2 admin.address bob.address) level in
+      let transfer_request = ({
+          from_=bob.address;
+          txs=[{to_=admin.address;amount=2n;token_id=1n}]
+      })
+      in
+      let hash_ = Crypto.blake2b (Bytes.pack transfer_request) in
+      let permit = C.make_permit(hash_, bob, contract.originated_address, 0n) in
+      B.Result.reduce [
+        B.Context.call_as carol contract
+          (Permit [permit]);
+        let storage = B.Contract.storage_of contract in
+        B.Assert.is_equal "permit has been registered"
+          (Big_map.find (bob.address, hash_) storage.extension.permits)
+          (Tezos.get_now ());
+      ]);
 
-(* Boostrapping of the test environment, *)
-let init_tok_amount = 10n
-let bootstrap (init_ts, init_default_expiry, init_max_expiry : timestamp * nat * nat) =
-    let (admin, owners, owners_with_keys, ops) = Bootstrap.boot_state(init_ts) in
-    let base_extended_storage = Token_helper.get_initial_extended_storage(admin, init_default_expiry, init_max_expiry) in
-    let tok = Bootstrap.boot_token(owners, ops, init_tok_amount, base_extended_storage) in
-    (tok, admin, owners_with_keys)
+  B.Model.case
+    "permit"
+    "multiple permits creation succeeds"
+    (fun level ->
+      let (_, (admin, bob, carol)) = B.Context.init_default () in
+      let contract = C.originate_with_storage (C.storage2 admin.address bob.address) level in
+      let transfer_request = ({
+          from_=bob.address;
+          txs=[{to_=admin.address;amount=2n;token_id=1n}]
+      })
+      in
+      let hash1 = Crypto.blake2b (Bytes.pack transfer_request) in
+      let permit1 = C.make_permit(hash1, bob, contract.originated_address, 0n) in
+      let transfer_request = ({
+          from_=carol.address;
+          txs=[{to_=bob.address;amount=2n;token_id=1n}]
+      })
+      in
+      let hash2 = Crypto.blake2b (Bytes.pack transfer_request) in
+      let permit2 = C.make_permit(hash2, carol, contract.originated_address, 1n) in
+      let permit_act1 = B.Context.call_as carol contract (Permit [permit1]) in
+      let time1 = Tezos.get_now () in
+      let permit_act2 = B.Context.call_as admin contract (Permit [permit2]) in
+      B.Result.reduce [
+        permit_act1;
+        permit_act2;
+        let storage = B.Contract.storage_of contract in
+        B.Assert.is_equal "permit has been registered"
+          (Big_map.find (bob.address, hash1) storage.extension.permits)
+          (time1);
+        let storage = B.Contract.storage_of contract in
+        B.Result.and_then
+          (B.Assert.is_equal "permit has been registered"
+            (Big_map.find (carol.address, hash2) storage.extension.permits)
+            (Tezos.get_now ()))
+          (B.Assert.is_equal "counter"
+            storage.extension.counter
+            2n)
+      ]);
 
-(* Successful permit creation *)
-let test_success_add_permit_one =
-    let (tok, _, owners) = bootstrap(("2000-01-01t10:10:10Z" : timestamp), 3600n, 7200n) in
-    let (owner1, owner2, _) = owners in
-    let (owner1_addr, _, _) = owner1 in
-    let (owner2_addr, _, _) = owner2 in
-    let transfer_requests = ([
-        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
-    ] : Token.FA2.TZIP12.transfer) in
-    let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
-    let permit = Token_helper.make_permit(hash_, owner1, tok.addr, 0n) in
-    let () = Token_helper.permit_success([permit], tok.contr) in
-    let () = Token_helper.assert_has_permit(tok.taddr, (owner1_addr, hash_)) in
-    Token_helper.assert_counter(tok.taddr, 1n)
+  B.Model.case
+    "permit"
+    "creating a list of permits succeeds"
+    (fun level ->
+      let (_, (admin, bob, carol)) = B.Context.init_default () in
+      let contract = C.originate_with_storage (C.storage2 admin.address bob.address) level in
+      let transfer_request = ({
+          from_=bob.address;
+          txs=[{to_=admin.address;amount=2n;token_id=1n}]
+      })
+      in
+      let hash1 = Crypto.blake2b (Bytes.pack transfer_request) in
+      let permit1 = C.make_permit(hash1, bob, contract.originated_address, 0n) in
+      let transfer_request = ({
+          from_=carol.address;
+          txs=[{to_=bob.address;amount=2n;token_id=1n}]
+      })
+      in
+      let hash2 = Crypto.blake2b (Bytes.pack transfer_request) in
+      let permit2 = C.make_permit(hash2, carol, contract.originated_address, 1n) in
+      let permit_action = B.Context.call_as carol contract (Permit [permit1; permit2]) in
+      B.Result.reduce [
+        permit_action;
+        let storage = B.Contract.storage_of contract in
+        B.Assert.is_equal "permit has been registered"
+          (Big_map.find (bob.address, hash1) storage.extension.permits)
+          (Tezos.get_now());
+        let storage = B.Contract.storage_of contract in
+        B.Result.and_then
+          (B.Assert.is_equal "permit has been registered"
+            (Big_map.find (carol.address, hash2) storage.extension.permits)
+            (Tezos.get_now ()))
+          (B.Assert.is_equal "counter"
+            storage.extension.counter
+            2n)
+      ]);
 
-(* Successful successive permit creation *)
-let test_success_add_permit_list =
-    let (tok, _, owners) = bootstrap(("2000-01-01t10:10:10Z" : timestamp), 3600n, 7200n) in
-    let (owner1, owner2, _) = owners in
-    let (owner1_addr, _, _) = owner1 in
-    let (owner2_addr, _, _) = owner2 in
-    let transfer_requests = ([
-        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
-    ] : Token.FA2.TZIP12.transfer) in
-    let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
-    let permit1 = Token_helper.make_permit(hash_, owner1, tok.addr, 0n) in
-    let transfer_requests = ([
-        ({from_=owner2_addr; txs=([{to_=owner1_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
-    ] : Token.FA2.TZIP12.transfer) in
-    let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
-    let permit2 = Token_helper.make_permit(hash_, owner2, tok.addr, 1n) in
-    let () = Token_helper.permit_success([permit1; permit2], tok.contr) in
-    let () = Token_helper.assert_has_permit(tok.taddr, (owner2_addr, hash_)) in
-    Token_helper.assert_counter(tok.taddr, 2n)
+  B.Model.case
+    "permit"
+    "updating an expired permit succeeds"
+    (fun level ->
+      let (_, (admin, bob, carol)) = B.Context.init_default () in
+      let contract = C.originate_with_storage (C.storage2 admin.address bob.address) level in
+      let transfer_request = ({
+          from_=bob.address;
+          txs=[{to_=admin.address;amount=2n;token_id=1n}]
+      })
+      in
+      let hash = Crypto.blake2b (Bytes.pack transfer_request) in
+      let permit1 = C.make_permit(hash, bob, contract.originated_address, 0n) in
+      let permit2 = C.make_permit(hash, bob, contract.originated_address, 1n) in
+      B.Result.reduce [
+        B.Context.call_as carol contract (Permit [permit1]);
+        B.Context.wait_for 100n;
+        B.Context.call_as carol contract (Permit [permit2]);
+        let storage = B.Contract.storage_of contract in
+        B.Assert.is_equal "permit has been registered"
+          (Big_map.find (bob.address, hash) storage.extension.permits)
+          (Tezos.get_now ())
+      ]);
 
-(* Successful permit update *)
-let test_success_update_permit =
-    let init_default_expiry = 86_400n in
-    let init_max_expiry = 259_200n in
-    let now = ("2000-01-03t10:10:10Z" : timestamp) in
-    let expired = ("2000-01-01t10:10:10Z" : timestamp) in
-
-    let (admin, owners, owners_with_keys, ops) = Bootstrap.boot_state(now) in
-    let (owner1, owner2, _) = owners_with_keys in
-    let (owner1_addr, _, _) = owner1 in
-    let (owner2_addr, _, _) = owner2 in
-
-    let transfer_requests = ([
-        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
-    ] : Token.FA2.TZIP12.transfer) in
-    let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
-
-    let extended_storage = Token_helper.get_initial_extended_storage(admin, init_default_expiry, init_max_expiry) in
-    let extended_storage = { extended_storage with
-        permits = Big_map.literal [((owner1_addr, hash_), expired)];
-        counter = 1n;
-    } in
-
-    let tok = Bootstrap.boot_token(owners, ops, init_tok_amount, extended_storage) in
-    let permit = Token_helper.make_permit(hash_, owner1, tok.addr, 1n) in
-    let () = Token_helper.permit_success([permit], tok.contr) in
-    Token_helper.assert_has_permit(tok.taddr, (owner1_addr, hash_))
-
-(* Failing permit update because it alredy exists and has not expired *)
-let test_success_update_permit =
-    let (tok, _, owners) = bootstrap(("2000-01-01t10:10:10Z" : timestamp), 3600n, 7200n) in
-    let (owner1, owner2, _) = owners in
-    let (owner1_addr, _, _) = owner1 in
-    let (owner2_addr, _, _) = owner2 in
-    let transfer_requests = ([
-        ({from_=owner1_addr; txs=([{to_=owner2_addr;amount=2n;token_id=1n}] : Token.FA2.TZIP12.atomic_trans list)});
-    ] : Token.FA2.TZIP12.transfer) in
-    let hash_ = Crypto.blake2b (Bytes.pack transfer_requests) in
-    let permit = Token_helper.make_permit(hash_, owner1, tok.addr, 0n) in
-    let () = Token_helper.permit_success([permit], tok.contr) in
-    let permit = Token_helper.make_permit(hash_, owner1, tok.addr, 1n) in
-    let r = Token_helper.permit([permit], tok.contr) in
-    Assert.string_failure r Token.Errors.dup_permit
+  B.Model.case
+    "permit"
+    "updating an expired permit succeeds"
+    (fun level ->
+      let (_, (admin, bob, carol)) = B.Context.init_default () in
+      let contract = C.originate_with_storage (C.storage2 admin.address bob.address) level in
+      let transfer_request = ({
+          from_=bob.address;
+          txs=[{to_=admin.address;amount=2n;token_id=1n}]
+      })
+      in
+      let hash = Crypto.blake2b (Bytes.pack transfer_request) in
+      let permit1 = C.make_permit(hash, bob, contract.originated_address, 0n) in
+      let permit2 = C.make_permit(hash, bob, contract.originated_address, 1n) in
+      B.Result.reduce [
+        B.Context.call_as carol contract (Permit [permit1]);
+        B.Expect.fail_with_value
+          Main.Errors.dup_permit
+          (B.Context.call_as carol contract (Permit [permit2]))
+      ])
+]

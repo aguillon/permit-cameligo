@@ -23,6 +23,9 @@ type mint_or_burn = [@layout:comb] {
 type permit_params = (key * (signature * bytes))
 type expiry_params = (address * (nat * (bytes option)))
 
+let empty_storage (admin : address) : storage =
+  Storage.make_storage admin (Big_map.empty : TokenTotalSupply.t)
+
 [@entry]
 let create_token
   (metadata,owner,amount : FA2.TZIP12.tokenMetadataData * address * nat)
@@ -167,6 +170,8 @@ let set_admin
   (s: storage): operation list * storage =
   Constants.no_operation, { s with extension = Extension.set_admin s.extension addr }
 
+
+(* FIXME *)
 (*
     Off-chain views required by TZIP-17
 

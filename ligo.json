@@ -1,14 +1,15 @@
 {
   "name": "@ligo/permit",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "dependencies": {
-    "@ligo/fa": "1.1.1"
+    "@ligo/fa": "1.1.1",
+    "ligo-breathalyzer": "1.6.0"
   },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com:ligolang/permit-cameligo.git"
   },
-  "author": "ligoLANG <https://ligolang.org/>",
+  "author": "The LigoLANG and Marigold teams",
   "main": "src/main.mligo",
   "license": "MIT",
   "description": "An example of permit contract (TZIP-17) written in cameligo",
