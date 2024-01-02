@@ -21,7 +21,7 @@ let normal_storage (admin : address) =
   ]
   in
   { empty with
-      extension = { empty.extension with extension = token_total_supply; default_expiry = 60n };
+      extension = { empty.extension with extension = token_total_supply; default_expiry = 60n; max_expiry = 100n };
       token_metadata = token_metadata
   }
 
@@ -46,3 +46,14 @@ let originate_with_storage (storage : Main.storage) (level : B.Logger.level) =
 
 let originate (level : B.Logger.level) (admin : address) =
   originate_with_storage (normal_storage admin) level
+
+(*
+    Make a permit with given packed params and secret key
+    The chain_id is equal to 0x00000000 in the test framework
+*)
+let make_permit (hash_, account, contract_address, counter : bytes * B.Context.actor * address * nat) =
+    let packed = Bytes.pack ((0x00000000, contract_address), (counter, hash_)) in
+    let sig_ = Test.sign account.secret packed in
+    (account.key, (sig_, hash_))
+
+

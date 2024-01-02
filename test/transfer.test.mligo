@@ -1,7 +1,6 @@
 #import "../src/main.mligo" "Main"
 #import "../breathalyzer/lib/lib.mligo" "B"
 #import "./helpers/common.mligo" "C"
-#import "./helpers/token.mligo" "Token_helper"
 
 let suite = B.Model.suite "Suite for transfer" [
   B.Model.case
@@ -16,7 +15,7 @@ let suite = B.Model.suite "Suite for transfer" [
       })
       in
       let hash_ = Crypto.blake2b (Bytes.pack transfer_request) in
-      let permit = Token_helper.make_permit(hash_, bob, contract.originated_address, 0n) in
+      let permit = C.make_permit(hash_, bob, contract.originated_address, 0n) in
       B.Result.reduce [
         B.Context.call_as carol contract
           (Permit [permit]);
@@ -48,7 +47,7 @@ let suite = B.Model.suite "Suite for transfer" [
       })
       in
       let hash_ = Crypto.blake2b (Bytes.pack transfer_request) in
-      let permit = Token_helper.make_permit(hash_, bob, contract.originated_address, 0n) in
+      let permit = C.make_permit(hash_, bob, contract.originated_address, 0n) in
       B.Result.reduce [
         B.Context.call_as carol contract
           (Permit [permit]);
@@ -81,7 +80,7 @@ let suite = B.Model.suite "Suite for transfer" [
       })
       in
       let hash_ = Crypto.blake2b (Bytes.pack transfer_request) in
-      let permit = Token_helper.make_permit(hash_, bob, contract.originated_address, 0n) in
+      let permit = C.make_permit(hash_, bob, contract.originated_address, 0n) in
       B.Result.reduce [
         B.Context.call_as admin contract
           (Permit [permit]);
