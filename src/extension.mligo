@@ -7,7 +7,7 @@ type user_expiries = (address, seconds option) big_map
 type permit_expiries = (permit_key, seconds option) big_map
 
 type 'a t = {
-    admin: address;
+    admins: address set;
     counter: nat;
     default_expiry: seconds;
     max_expiry: seconds;
@@ -17,8 +17,8 @@ type 'a t = {
     extension : 'a;
 }
 
-let make_extension (type a) (admin : address) (extension : a) : a t = {
-  admin = admin;
+let make_extension (type a) (admins : address set) (extension : a) : a t = {
+  admins = admins;
   counter = 0n;
   default_expiry = 0n;
   max_expiry = 0n;
@@ -44,13 +44,19 @@ let get_expiry (type a) (ext: a t) ((user, param_hash): permit_key) : seconds =
     | Some (None) -> ext.default_expiry
     | Some (Some exp) -> exp
 
-let assert_admin (type a)  (ext : a t) =
-    assert_with_error (Tezos.get_sender() = ext.admin) Errors.requires_admin
+let assert_admin (type a) (address : address)  (ext : a t) =
+    assert_with_error (Set.mem address ext.admins) Errors.requires_admin
 
-let set_admin (type a)  (ext : a t) (admin:address) =
-    let () = assert_admin(ext) in
-    { ext with admin = admin }
+let add_admin (type a) (ext : a t) (new_admin : address) =
+    let () = assert_admin (Tezos.get_sender ()) ext in
+    let admins = Set.add new_admin ext.admins in
+    { ext with admins = admins }
 
+let remove_admin (type a) (ext : a t) (admin : address) =
+    let () = assert_admin (Tezos.get_sender ()) ext in
+    let () = assert_admin admin ext in
+    let admins = Set.remove admin ext.admins in
+    { ext with admins = admins }
 
 let set_extension (type a) (ext : a t) (extension : a) =
     { ext with extension = extension }
