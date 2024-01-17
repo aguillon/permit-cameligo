@@ -7,6 +7,10 @@ type storage = FA2.storage
 type extension = Extension.t
 type 'a t = 'a extension storage
 
+let make_storage (type a) (admin : address) (extension : a) : a t =
+  let extension = Extension.make_extension admin extension in
+  FA2.make_storage extension
+
 let get_token_metadata (type a) (s:a t) = s.token_metadata
 let set_token_metadata (type a) (s:a t) (token_metadata:FA2.TZIP12.tokenMetadata) =
     {s with token_metadata = token_metadata}

@@ -17,6 +17,17 @@ type 'a t = {
     extension : 'a;
 }
 
+let make_extension (type a) (admin : address) (extension : a) : a t = {
+  admin = admin;
+  counter = 0n;
+  default_expiry = 0n;
+  max_expiry = 0n;
+  permits = Big_map.empty;
+  user_expiries = Big_map.empty;
+  permit_expiries = Big_map.empty;
+  extension = extension;
+}
+
 let get_user_defined_expiry (type a) (from_: address) (ext: a t) : seconds option =
     match Big_map.find_opt from_ ext.user_expiries with
     | None -> (Some ext.default_expiry)
@@ -78,7 +89,7 @@ let transfer_presigned (type a) (ext : a t) (param_permit_key: permit_key): bool
             match Big_map.find_opt param_permit_key ext.permit_expiries with
             | None ->
                 begin
-                    let user_address = param_permit_key.0 in 
+                    let user_address = param_permit_key.0 in
                     match Big_map.find_opt user_address ext.user_expiries with
                     | None -> (Some ext.default_expiry)
                     | Some exp -> exp

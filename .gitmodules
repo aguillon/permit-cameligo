@@ -1,4 +1,6 @@
 [submodule "ligo-fa2"]
 	path = ligo-fa2
-	url = git@github.com:aguillon/ligo-fa2.git
-	branch = extendable-API
+	url = https://github.com/ligolang/contract-catalogue
+[submodule "breathalyzer"]
+	path = breathalyzer
+	url = https://github.com/marigold-dev/breathalyzer
