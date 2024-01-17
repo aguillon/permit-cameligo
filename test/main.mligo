@@ -4,6 +4,7 @@
 #import "./transfer.test.mligo" "TransferTest"
 #import "./permit.test.mligo" "PermitTest"
 #import "./set_admin.test.mligo" "Set_adminTest"
+#import "./remove_admin.test.mligo" "Remove_adminTest"
 #import "./set_expiry.test.mligo" "Set_expiryTest"
 #import "./create_token.test.mligo" "Create_tokenTest"
 
@@ -16,4 +17,5 @@ let () =
     Set_adminTest.suite;
     Set_expiryTest.suite;
     Create_tokenTest.suite;
+    Remove_adminTest.suite;
   ]

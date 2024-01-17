@@ -23,14 +23,15 @@ type mint_or_burn = [@layout:comb] {
 type permit_params = (key * (signature * bytes))
 type expiry_params = (address * (nat * (bytes option)))
 
-let empty_storage (admin : address) : storage =
-  Storage.make_storage admin (Big_map.empty : TokenTotalSupply.t)
+let empty_storage (single_admin : address) : storage =
+  let admins = Set.literal [single_admin] in
+  Storage.make_storage admins (Big_map.empty : TokenTotalSupply.t)
 
 [@entry]
 let create_token
   (metadata,owner,amount : FA2.TZIP12.tokenMetadataData * address * nat)
   (s : storage): operation list * storage =
-    let () = Extension.assert_admin s.extension in
+    let () = Extension.assert_admin (Tezos.get_sender ()) s.extension in
     let md = Storage.add_new_token s.token_metadata metadata.token_id metadata in
     let s = Storage.set_token_metadata s md in
     let ledger = FA2.increase_token_amount_for_user s.ledger owner metadata.token_id amount in
@@ -44,7 +45,7 @@ let create_token
 let mint_token
   (lst : mint_or_burn list)
   (s : storage): operation list * storage =
-   let () = Extension.assert_admin s.extension in
+   let () = Extension.assert_admin (Tezos.get_sender ()) s.extension in
    let process_one ((ledger,supply), {owner;token_id;amount_} : (FA2.ledger * TokenTotalSupply.t) * mint_or_burn) =
       let () = FA2.Assertions.assert_token_exist s.token_metadata token_id in
       FA2.increase_token_amount_for_user ledger owner token_id amount_,
@@ -60,7 +61,7 @@ let mint_token
 let burn_token
   (lst : mint_or_burn list)
   (s : storage): operation list * storage =
-   let () = Extension.assert_admin s.extension in
+   let () = Extension.assert_admin (Tezos.get_sender ()) s.extension in
    let process_one ((ledger,supply), {owner;token_id;amount_} : (FA2.ledger * TokenTotalSupply.t) * mint_or_burn) =
       FA2.decrease_token_amount_for_user ledger owner token_id amount_,
       TokenTotalSupply.decrease_supply supply token_id amount_
@@ -168,7 +169,13 @@ let transfer
 let set_admin
   (addr: address)
   (s: storage): operation list * storage =
-  Constants.no_operation, { s with extension = Extension.set_admin s.extension addr }
+  Constants.no_operation, { s with extension = Extension.add_admin s.extension addr }
+
+[@entry]
+let remove_admin
+  (addr: address)
+  (s: storage): operation list * storage =
+  Constants.no_operation, { s with extension = Extension.remove_admin s.extension addr }
 
 
 (* FIXME *)
