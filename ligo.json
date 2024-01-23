@@ -1,6 +1,6 @@
 {
   "name": "@ligo/permit",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "dependencies": {
     "@ligo/fa": "1.1.1",
     "ligo-breathalyzer": "1.6.0"

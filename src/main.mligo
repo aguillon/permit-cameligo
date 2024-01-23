@@ -1,4 +1,4 @@
-#import "../ligo-fa2/lib/main.mligo" "FA2"
+#import "@ligo/fa/lib/main.mligo" "FA2"
 #import "./constants.mligo" "Constants"
 #import "./storage.mligo" "Storage"
 #import "./extension.mligo" "Extension"
@@ -78,18 +78,18 @@ let permit
   (permits : (permit_params list))
   (s : storage): operation list * storage =
     let process_permit (ext, permit : extension * permit_params) =
-        let (pub_key, (sig_, hash_)) = permit in
-        let packed = Bytes.pack (((Tezos.get_chain_id()), Tezos.get_self_address()), (ext.counter, hash_)) in
+        let (pub_key, (sig_, transfer_hash)) = permit in
+        let packed = Bytes.pack (((Tezos.get_chain_id()), Tezos.get_self_address()), (ext.counter, transfer_hash)) in
         if Crypto.check pub_key sig_ packed
         then
             let sender_ = Tezos.address (Tezos.implicit_account (Crypto.hash_key pub_key)) in
-            let permit_key = sender_, hash_ in
+            let permit_key = sender_, transfer_hash in
             match Big_map.find_opt permit_key ext.permits with
             | None -> Extension.add_permit ext permit_key
             | Some submission_timestamp ->
                 let () = Extension._check_not_expired s.extension submission_timestamp permit_key in
                 Extension.update_permit ext permit_key
-        else ([%Michelson ({| { FAILWITH } |} : string * bytes -> extension)]) (Errors.missigned, packed)
+        else failwith (Errors.missigned, packed)
     in
     let extension = List.fold_left process_permit s.extension permits in
     Constants.no_operation, { s with extension = extension }

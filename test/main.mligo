@@ -1,4 +1,4 @@
-#import "../breathalyzer/lib/lib.mligo" "B"
+#import "ligo-breathalyzer/lib/lib.mligo" "B"
 #import "./mint_token.test.mligo" "MintTest"
 #import "./burn_token.test.mligo" "BurnTest"
 #import "./transfer.test.mligo" "TransferTest"

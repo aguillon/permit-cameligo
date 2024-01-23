@@ -70,7 +70,7 @@ const deploy = async () => {
   try {
     const signer = await InMemorySigner.fromSecretKey(pk);
 
-    const admin = await signer.publicKeyHash();
+    const admins: Array<string> = [await signer.publicKeyHash()];
 
     Tezos.setProvider({ signer });
 
@@ -90,7 +90,7 @@ const deploy = async () => {
       // ^ FA2 storage
 
       extension: {
-        admin,
+        admins,
         counter: 0,
         default_expiry: 3600,
         max_expiry: 7200,

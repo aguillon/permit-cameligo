@@ -1,5 +1,5 @@
 #import "../../src/main.mligo" "Main"
-#import "../../breathalyzer/lib/lib.mligo" "B"
+#import "ligo-breathalyzer/lib/lib.mligo" "B"
 
 let empty_storage (admin : address) = Main.empty_storage admin
 

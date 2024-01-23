@@ -1,6 +1,0 @@
-[submodule "ligo-fa2"]
-	path = ligo-fa2
-	url = https://github.com/ligolang/contract-catalogue
-[submodule "breathalyzer"]
-	path = breathalyzer
-	url = https://github.com/marigold-dev/breathalyzer

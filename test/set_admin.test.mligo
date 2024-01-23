@@ -1,5 +1,5 @@
 #import "../src/main.mligo" "Main"
-#import "../breathalyzer/lib/lib.mligo" "B"
+#import "ligo-breathalyzer/lib/lib.mligo" "B"
 #import "./helpers/common.mligo" "C"
 
 let suite = B.Model.suite "Suite for set_admin" [

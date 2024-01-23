@@ -1,4 +1,4 @@
-#import "../ligo-fa2/lib/main.mligo" "FA2"
+#import "@ligo/fa/lib/main.mligo" "FA2"
 
 module FA2 = FA2.MultiAssetExtendable
 
